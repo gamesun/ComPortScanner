@@ -36,6 +36,7 @@ BEGIN_MESSAGE_MAP(CComPortScannerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON1, &CComPortScannerDlg::OnBnClickedHide)
 	ON_BN_CLICKED(IDCANCEL, &CComPortScannerDlg::OnBnClickedCancel)
 	ON_WM_ACTIVATE()
+	ON_WM_DEVICECHANGE()
 END_MESSAGE_MAP()
 
 
@@ -95,20 +96,19 @@ HCURSOR CComPortScannerDlg::OnQueryDragIcon()
 
 void CComPortScannerDlg::OnBnClickedOk()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	CDialogEx::OnOK();
+
+//	CDialogEx::OnOK();
 }
 
 
 void CComPortScannerDlg::OnBnClickedHide()
 {
-	// TODO: 在此添加控件通知处理程序代码
+
 }
 
 
 void CComPortScannerDlg::OnBnClickedCancel()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	CDialogEx::OnCancel();
 }
 
@@ -117,5 +117,25 @@ void CComPortScannerDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimize
 {
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 
-	// TODO: 在此处添加消息处理程序代码
+
+}
+
+BOOL CComPortScannerDlg::OnDeviceChange(UINT nEventType, DWORD dwData)
+{
+	DEV_BROADCAST_DEVICEINTERFACE* dbd;
+	void *p = (void*)dwData;
+	dbd = (DEV_BROADCAST_DEVICEINTERFACE*) p;
+
+	switch (nEventType){
+	case DBT_DEVICEREMOVECOMPLETE:
+
+		break;
+	case DBT_DEVICEARRIVAL:
+
+		break;
+	default:
+		break;
+	}
+
+	return TRUE;
 }

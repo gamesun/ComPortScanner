@@ -4,7 +4,11 @@
 
 #pragma once
 #include "afxcmn.h"
+#include <WinUser.h>
+#include <Windows.h>
+#pragma comment(lib, "User32.lib")
 #include <vector>
+#include "Dbt.h"
 
 typedef struct _comport{
 	CString strPortName;
@@ -42,6 +46,7 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg BOOL OnDeviceChange(UINT nEventType, DWORD dwData);
 	DECLARE_MESSAGE_MAP()
 public:
 	CListCtrl m_lstCtl_Output;
