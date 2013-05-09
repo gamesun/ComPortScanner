@@ -96,8 +96,45 @@ HCURSOR CComPortScannerDlg::OnQueryDragIcon()
 
 void CComPortScannerDlg::OnBnClickedOk()
 {
-
+	UpdatePortInfo( false );
 //	CDialogEx::OnOK();
+}
+
+void CComPortScannerDlg::UpdatePortInfo( bool bIsRemove )
+{
+	std::vector<ST_COM_PORT> vstComPortInfoNew;
+	
+	m_lstCtl_Output.DeleteAllItems();
+
+	DeviceEnumComPort( vstComPortInfoNew );
+
+	for ( std::vector<ST_COM_PORT>::iterator n = vstComPortInfoNew.begin(); n != vstComPortInfoNew.end(); n++ ){
+		for ( std::vector<ST_COM_PORT>::iterator o = m_vstComPortInfo.begin(); o != m_vstComPortInfo.end(); o++ ){
+			if ( n->strPortName == o->strPortName ){
+				n->bIsOldPort = true;
+				o->bIsExistPort = true;
+			}
+		}
+
+		if ( n->bIsOldPort ){
+		// old
+			m_lstCtl_Output.InsertItem( distance( vstComPortInfoNew.begin(), n ), n->strPortName );
+		} else {
+		// new
+			m_lstCtl_Output.InsertItem( distance( vstComPortInfoNew.begin(), n ), "Add " + n->strPortName );
+		}
+	}
+
+	if ( bIsRemove ){
+		for ( std::vector<ST_COM_PORT>::iterator o = m_vstComPortInfo.begin(); o != m_vstComPortInfo.end(); o++ ){
+			if ( ! o->bIsExistPort ){
+			// remove
+				m_lstCtl_Output.InsertItem( distance( m_vstComPortInfo.begin(), o ), "Remove " + o->strPortName );
+			}
+		}
+	}
+
+	m_vstComPortInfo = vstComPortInfoNew;
 }
 
 
@@ -128,14 +165,106 @@ BOOL CComPortScannerDlg::OnDeviceChange(UINT nEventType, DWORD dwData)
 
 	switch (nEventType){
 	case DBT_DEVICEREMOVECOMPLETE:
-
+		UpdatePortInfo( true );
 		break;
 	case DBT_DEVICEARRIVAL:
-
+		UpdatePortInfo( false );
 		break;
 	default:
 		break;
 	}
 
 	return TRUE;
+}
+
+long CComPortScannerDlg::DeviceEnumComPort( std::vector<ST_COM_PORT> &vstComPort )
+{
+	HDEVINFO hDevInfo;
+	SP_DEVINFO_DATA DeviceInfoData;
+	DWORD DeviceIndex;
+	
+/*
+  GUID_DEVCLASS_FDC
+  GUID_DEVCLASS_DISPLAY
+  GUID_DEVCLASS_CDROM
+  GUID_DEVCLASS_KEYBOARD
+  GUID_DEVCLASS_COMPUTER
+  GUID_DEVCLASS_SYSTEM
+  GUID_DEVCLASS_DISKDRIVE
+  GUID_DEVCLASS_MEDIA
+  GUID_DEVCLASS_MODEM
+  GUID_DEVCLASS_MOUSE
+  GUID_DEVCLASS_NET
+  GUID_DEVCLASS_USB
+  GUID_DEVCLASS_FLOPPYDISK
+  GUID_DEVCLASS_UNKNOWN
+  GUID_DEVCLASS_SCSIADAPTER
+  GUID_DEVCLASS_HDC
+  GUID_DEVCLASS_PORTS
+  GUID_DEVCLASS_MONITOR
+*/
+	// Create a HDECINFO with all present devices.
+	hDevInfo = SetupDiGetClassDevs( (LPGUID)&GUID_DEVCLASS_PORTS, 0, 0, DIGCF_PRESENT );
+
+	if ( hDevInfo == INVALID_HANDLE_VALUE ){
+		DWORD ErrorCode = GetLastError();
+		// Insert error handling here.
+		return -1;
+	}
+
+	// Enumerate through all devices in Set.
+	DeviceInfoData.cbSize = sizeof( SP_DEVINFO_DATA );
+
+	for ( DeviceIndex = 0; SetupDiEnumDeviceInfo( hDevInfo, DeviceIndex, &DeviceInfoData ); DeviceIndex++ ){
+		DWORD DataPropertyType;
+		LPTSTR buffer = NULL;
+		DWORD buffersize = 0;
+
+		while ( !SetupDiGetDeviceRegistryProperty(
+			hDevInfo,
+			&DeviceInfoData,
+			SPDRP_FRIENDLYNAME,
+			&DataPropertyType,
+			(PBYTE)buffer,
+			buffersize,
+			&buffersize ) ){
+			DWORD ErrorCode = GetLastError();
+			if ( ErrorCode == ERROR_INSUFFICIENT_BUFFER ){
+				// Change the buffer size.
+				if ( buffer ) LocalFree( buffer );
+				buffer = (LPTSTR)LocalAlloc( LPTR, buffersize );
+			} else {
+				// Insert error handling here.
+				break;
+			}
+		}
+
+		if ( buffer == NULL ){
+			continue;
+		}
+		//CString FriendlyPortName = buffer;
+		int nStart, nEnd;
+		ST_COM_PORT stComPort;
+		stComPort.bIsOldPort = false;
+		stComPort.bIsExistPort = false;
+		stComPort.strPortName.Format( buffer );
+		nStart = stComPort.strPortName.ReverseFind( '(' ) + 1;
+		nEnd = stComPort.strPortName.ReverseFind( ')' );
+		stComPort.strPortName = stComPort.strPortName.Mid( nStart, nEnd - nStart ) + "  " + stComPort.strPortName;
+
+		vstComPort.push_back( stComPort );
+
+		if ( buffer ){
+			LocalFree( buffer );
+		}
+	}
+
+	if ( GetLastError() != NO_ERROR
+		&& GetLastError() != ERROR_NO_MORE_ITEMS ){
+		return -1;
+	}
+	// Cleanup.
+	SetupDiDestroyDeviceInfoList( hDevInfo );
+
+	return 0;
 }

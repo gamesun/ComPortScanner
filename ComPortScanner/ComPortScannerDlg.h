@@ -6,9 +6,12 @@
 #include "afxcmn.h"
 #include <WinUser.h>
 #include <Windows.h>
+#include <SetupAPI.h>
 #pragma comment(lib, "User32.lib")
+#pragma comment(lib, "Setupapi.lib")
 #include <vector>
 #include "Dbt.h"
+#include <DEVGUID.H>
 
 typedef struct _comport{
 	CString strPortName;
@@ -25,9 +28,8 @@ public:
 
 	void ShowHideWindow( void );
 
-	UCHAR DeviceEnumComPort();
-	void DiffComPorts();
-	void UpdatePortInfo();
+	long DeviceEnumComPort( std::vector<ST_COM_PORT>& );
+	void UpdatePortInfo( bool );
 
 // Dialog Data
 	enum { IDD = IDD_COMPORTSCANNER_DIALOG };
