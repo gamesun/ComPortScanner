@@ -6,6 +6,15 @@
 #include "ComPortScanner.h"
 #include "ComPortScannerDlg.h"
 #include "afxdialogex.h"
+#include <WinUser.h>
+#include <Windows.h>
+#include <SetupAPI.h>
+#pragma comment(lib, "User32.lib")
+#pragma comment(lib, "Setupapi.lib")
+
+#include "Dbt.h"
+#include <DEVGUID.H>
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -37,6 +46,7 @@ BEGIN_MESSAGE_MAP(CComPortScannerDlg, CDialogEx)
 	ON_BN_CLICKED(IDCANCEL, &CComPortScannerDlg::OnBnClickedCancel)
 	ON_WM_ACTIVATE()
 	ON_WM_DEVICECHANGE()
+	ON_MESSAGE(WM_NOTIFYICONEVENT, OnNotifyIconEvent)
 END_MESSAGE_MAP()
 
 
@@ -52,6 +62,22 @@ BOOL CComPortScannerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
 	// TODO: Add extra initialization here
+	m_notify.cbSize = sizeof( NOTIFYICONDATA );
+	m_notify.hWnd = this->m_hWnd;
+	m_notify.uID = IDR_MAINFRAME;
+	m_notify.dwInfoFlags = NIIF_INFO;
+	m_notify.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_INFO;
+	m_notify.uCallbackMessage = WM_NOTIFYICONEVENT;
+	m_notify.hIcon = LoadIcon( AfxGetInstanceHandle(), MAKEINTRESOURCE( IDR_MAINFRAME ) );
+	lstrcpy( m_notify.szTip, _T("ComPortScanner") );
+	lstrcpy( m_notify.szInfoTitle, _T("") );
+	lstrcpy( m_notify.szInfo, _T("") );
+
+	Shell_NotifyIcon( NIM_ADD, &m_notify );
+
+	m_bIsWindowHiding = false;
+
+	UpdatePortInfo( false );
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -122,6 +148,11 @@ void CComPortScannerDlg::UpdatePortInfo( bool bIsRemove )
 		} else {
 		// new
 			m_lstCtl_Output.InsertItem( distance( vstComPortInfoNew.begin(), n ), "Add " + n->strPortName );
+
+			lstrcpy( m_notify.szInfoTitle, _T("ComPort Plug In!") );
+			lstrcpy( m_notify.szInfo, n->strPortName );
+
+			Shell_NotifyIcon( NIM_MODIFY, &m_notify );
 		}
 	}
 
@@ -130,6 +161,11 @@ void CComPortScannerDlg::UpdatePortInfo( bool bIsRemove )
 			if ( ! o->bIsExistPort ){
 			// remove
 				m_lstCtl_Output.InsertItem( distance( m_vstComPortInfo.begin(), o ), "Remove " + o->strPortName );
+
+				lstrcpy( m_notify.szInfoTitle, _T("ComPort Plug Out!") );
+				lstrcpy( m_notify.szInfo, o->strPortName );
+
+				Shell_NotifyIcon( NIM_MODIFY, &m_notify );
 			}
 		}
 	}
@@ -140,12 +176,25 @@ void CComPortScannerDlg::UpdatePortInfo( bool bIsRemove )
 
 void CComPortScannerDlg::OnBnClickedHide()
 {
-
+	ShowHideWindow();
 }
 
+void CComPortScannerDlg::ShowHideWindow( void )
+{
+	if ( m_bIsWindowHiding ){
+		ShowWindow( SW_SHOWNORMAL );
+		m_bIsWindowHiding = false;
+	} else {
+		ShowWindow( SW_HIDE );
+		m_bIsWindowHiding = true;
+		UpdateWindow();
+	}
+}
 
 void CComPortScannerDlg::OnBnClickedCancel()
 {
+	Shell_NotifyIcon( NIM_DELETE, &m_notify );
+
 	CDialogEx::OnCancel();
 }
 
@@ -155,6 +204,42 @@ void CComPortScannerDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimize
 	CDialogEx::OnActivate(nState, pWndOther, bMinimized);
 
 
+}
+
+LRESULT CComPortScannerDlg::OnNotifyIconEvent( WPARAM wParam, LPARAM lParam )
+{
+	UINT uID;
+	UINT uMouseMsg;
+	POINT pt;
+	CMenu menu;
+
+	uID = (UINT)wParam;
+	uMouseMsg = (UINT)lParam;
+
+	if ( IDR_MAINFRAME == uID ){
+		GetCursorPos( &pt );
+
+		switch ( uMouseMsg ){
+		case WM_LBUTTONDOWN:
+			ShowHideWindow();
+			break;
+		case WM_RBUTTONDOWN:
+			break;
+		case WM_LBUTTONDBLCLK:
+			ShowHideWindow();
+			break;
+		case WM_RBUTTONUP:
+			menu.CreatePopupMenu();
+			menu.AppendMenu( MF_STRING, WM_DESTROY, _T("Exit") );
+			menu.TrackPopupMenu( TPM_LEFTALIGN, pt.x, pt.y, this );
+			menu.DestroyMenu();
+			break;
+		default:
+			break;
+		}
+	}
+
+	return 0;
 }
 
 BOOL CComPortScannerDlg::OnDeviceChange(UINT nEventType, DWORD dwData)
