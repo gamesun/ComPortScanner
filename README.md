@@ -12,5 +12,9 @@ Show a tip when devices is plugged in or plugged out.
 
 ![](doc/RemovePort.png "Remove a port")
 
+![](doc/PluginTip.png "Plug in")
+
+![](doc/PlugoutTip.png "Plug out")
+
 
 VS2010/MFC/VC++

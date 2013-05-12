@@ -78,6 +78,7 @@ BOOL CComPortScannerDlg::OnInitDialog()
 	m_bIsWindowHiding = false;
 
 	UpdatePortInfo( false );
+	UpdatePortInfo( false );
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
