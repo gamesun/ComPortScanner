@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "ComPortScanner.h"
 #include "ComPortScannerDlg.h"
+#include "AboutDlg.h"
 #include "afxdialogex.h"
 #include <WinUser.h>
 #include <Windows.h>
@@ -47,6 +48,7 @@ BEGIN_MESSAGE_MAP(CComPortScannerDlg, CDialogEx)
 	ON_WM_ACTIVATE()
 	ON_WM_DEVICECHANGE()
 	ON_MESSAGE(WM_NOTIFYICONEVENT, OnNotifyIconEvent)
+	ON_BN_CLICKED(IDC_BTN_ABOUT, &CComPortScannerDlg::OnBnClickedBtnAbout)
 END_MESSAGE_MAP()
 
 
@@ -353,4 +355,11 @@ long CComPortScannerDlg::DeviceEnumComPort( std::vector<ST_COM_PORT> &vstComPort
 	SetupDiDestroyDeviceInfoList( hDevInfo );
 
 	return 0;
+}
+
+
+void CComPortScannerDlg::OnBnClickedBtnAbout()
+{
+	CAboutDlg dlg;
+	dlg.DoModal();
 }

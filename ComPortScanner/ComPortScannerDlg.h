@@ -54,4 +54,5 @@ public:
 	afx_msg void OnBnClickedHide();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+	afx_msg void OnBnClickedBtnAbout();
 };
